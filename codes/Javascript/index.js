@@ -1,4 +1,5 @@
 import * as THREE from '../../node_modules/three/src/Three.js';
+import { gsap } from '../../node_modules/gsap/all.js';
 
 let scene, camera, renderer;
 let objects = [1, 1, 1, 1, 1]; // Array to hold our scrollable objects
@@ -49,34 +50,38 @@ function onScroll(scroll) {
         console.log(objectCount)
         if (newScroll > 0 && currCam < objectCount) {
             currCam++;
-            console.log("yppie")
         } else if (newScroll < 0 && currCam > 1) {
             currCam--;
-            console.log("yippie 2")
+        } else {
+            canScroll = true;
+            return;
         }
 
-        camera.position.y = -12.5 * (currCam - 1);
-        console.log("Nieuwe camera-positie:", camera.position.y);
-        setTimeout(() => {
-            canScroll = true;
-        }, 500);
+        const targetY = -12.5 * (currCam - 1); // Target y-position
+        gsap.timeline()
+            .to(camera.position, { z: 10, duration: 0.5 }) // Move camera back
+            .to(camera.position, { y: targetY, duration: 0.5 }) // Slide camera down
+            .to(camera.position, { z: 5, duration: 0.5 }) // Move camera forward
+            .call(() => { canScroll = true; }); // Re-enable scrolling after animation
+
+        console.log(`Camera moved to plane ${currCam}, new y: ${targetY}`);
     }
 
 }
-    // animation loop
-    function animate() {
-        requestAnimationFrame(animate);
+// animation loop
+function animate() {
+    requestAnimationFrame(animate);
 
-        renderer.render(scene, camera);
-    }
+    renderer.render(scene, camera);
+}
 
-    // Resize handler
-    function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
+// Resize handler
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
-    // Initialize everything
-    init();
-    animate();
+// Initialize everything
+init();
+animate();

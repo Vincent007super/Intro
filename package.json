@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/Vincent007super/Portfolio#readme",
   "dependencies": {
+    "gsap": "^3.12.5",
     "three": "^0.170.0"
   }
 }
