@@ -7,8 +7,8 @@ let planesContent = [
     {
         plane: 1,
         layout: "basic", // Layout type
-        title: "Who am I?",
-        description: "This is merely a test. Nothing more, nothing less",
+        title: "Hello world",
+        description: "Welcome to my website :D",
         image: "example1.png"
     },
     {
@@ -16,8 +16,22 @@ let planesContent = [
         layout: "detailed", // Layout type
         title: "American declaration on the empire of Japan",
         description: "Japan has, therefore, undertaken a surprise offensive extending throughout the Pacific area. The facts of yesterday and today speak for themselves. The people of the United States have already formed their opinions and well understand the implications to the very life and safety of our Nation. As Commander in Chief of the Army and Navy I have directed that all measures be taken for our defense. But always will our whole Nation remember the character of the onslaught against us. No matter how long it may take us to overcome this premeditated invasion, the American people in their righteous might will win through to absolute victory.",
-        image: "example2.png",
+        image: "../../media/img/FDR.jpg",
         extraInfo: "~ Franklin D. Rooseveld"
+    },
+    {
+        plane: 3,
+        layout: "multipleImages", // Nieuwe lay-out met meerdere afbeeldingen
+        title: "A Collection of Images",
+        description: "Here are some images for you.",
+        images: ["image1.jpg", "image2.jpg", "image3.jpg"] // Meerdere afbeeldingen
+    },
+    {
+        plane: 4,
+        layout: "video", // Nieuwe lay-out voor video
+        title: "Watch This Video",
+        description: "A fascinating video about history.",
+        videoUrl: "video.mp4" // Video URL of pad naar lokaal bestand
     }
 ];
 
@@ -55,14 +69,19 @@ function init() {
 function createTextPlane(content) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = window.innerWidth; // Resolution of the texture
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+    const geometry = new THREE.PlaneGeometry(16, 9);
+    const textPlane = new THREE.Mesh(geometry, material);
+
+    canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Fill background
     context.fillStyle = 'black';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    // This function basically be a lot of math, DO NOT TOUCH!!!
+    // Tekst wrap functie
     function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
         const words = text.split(' ');
         let line = '';
@@ -82,7 +101,6 @@ function createTextPlane(content) {
 
     // Layout-specifiek ontwerp toepassen
     if (content.layout === "basic") {
-        // Basis layout: Titel en beschrijving
         context.fillStyle = 'white';
         context.font = '64px Arial';
         context.textAlign = 'center';
@@ -97,29 +115,56 @@ function createTextPlane(content) {
         context.font = '64px Arial';
         context.textAlign = 'left';
         context.textBaseline = 'top';
-        context.fillText(content.title, 50, 85);
+        context.fillText(content.title, 75, 85);
 
+        // Beschrijving
         context.font = '32px Arial';
-        wrapText(context, content.description, 50, 180, 1000, 40);
-
-        // Plaats voor afbeelding
-        context.fillStyle = 'gray';
-        context.fillRect(canvas.width - 400, 100, 300, 200);
-        context.fillStyle = 'white';
-        context.fillText("Image: " + content.image, canvas.width - 250, 320);
+        wrapText(context, content.description, 75, 180, 1000, 40);
 
         // Extra informatie
-        wrapText(context, content.extraInfo, 50, canvas.height - 200, 1800, 40);
+        wrapText(context, content.extraInfo, 75, canvas.height - 200, 1800, 40);
+    } else if (content.layout === "multipleImages") {
+        context.fillStyle = 'white';
+        context.font = '64px Arial';
+        context.textAlign = 'left';
+        context.textBaseline = 'top';
+        context.fillText(content.title, 75, 85);
+
+        context.font = '32px Arial';
+        wrapText(context, content.description, 75, 180, 1000, 40);
+
+        // Voeg meerdere afbeeldingen toe
+        content.images.forEach((image, index) => {
+            const imagePlane = createImagePlane(image, 4, 3); // Afbeelding groot maken
+            imagePlane.position.set(75 + (index * 5), 250, 0.1); // Elke afbeelding naar een andere plek verplaatsen
+            textPlane.add(imagePlane); // Voeg toe aan de plane
+        });
+    } else if (content.layout === "video") {
+        context.fillStyle = 'white';
+        context.font = '64px Arial';
+        context.textAlign = 'left';
+        context.textBaseline = 'top';
+        context.fillText(content.title, 75, 85);
+
+        context.font = '32px Arial';
+        wrapText(context, content.description, 75, 180, 1000, 40);
+
+        // Voeg een video toe
+        const videoPlane = createVideoPlane(content.videoUrl);
+        videoPlane.position.set(4, -0.2, 0.1);
+        textPlane.add(videoPlane); // Voeg video toe als kind van de tekstplane
     }
 
-    // Create texture
-    const texture = new THREE.CanvasTexture(canvas);
-
-    // Create material and geometry
-    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-    const geometry = new THREE.PlaneGeometry(16, 9); // Adjust size if needed
-    return new THREE.Mesh(geometry, material);
+    // Plaats afbeelding als apart object
+    if (content.layout === "detailed" && content.image) {
+        const imagePlane = createImagePlane(content.image, 4, 4.5); // Afbeeldingsgrootte aanpassen
+        imagePlane.position.set(3.5, 0, 0.1); // Positie ten opzichte van de tekst
+        textPlane.add(imagePlane); // Voeg afbeelding toe als kind van de tekstplane
+    }
+    return textPlane;
 }
+
+
 
 // Handle scrolling
 function onScroll(scroll) {
@@ -145,6 +190,32 @@ function onScroll(scroll) {
 
         console.log(`Camera moved to plane ${currCam}, new y: ${targetY}`);
     }
+}
+// Image on plane
+function createImagePlane(imageUrl, width, height) {
+    const textureLoader = new THREE.TextureLoader();
+    const texture = textureLoader.load(imageUrl);
+
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const geometry = new THREE.PlaneGeometry(width, height);
+
+    const imagePlane = new THREE.Mesh(geometry, material);
+    return imagePlane;
+}
+// Video on plane
+function createVideoPlane(videoUrl) {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.load();
+    video.play();
+    video.loop = true;
+
+    const texture = new THREE.VideoTexture(video);
+    const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+    const geometry = new THREE.PlaneGeometry(16, 9); // Pas de grootte aan
+    const videoPlane = new THREE.Mesh(geometry, material);
+
+    return videoPlane;
 }
 
 // Animation loop
