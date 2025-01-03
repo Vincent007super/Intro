@@ -39,18 +39,37 @@ let planesContent = [
 let scroll;
 let newScroll;
 let canScroll = true;
+let camPosZ; // Z position variable of the camera
 let currCam = 1; // Where the Camera currently is
-
 // Initialize Three.js
+
+// Set initial camera position
+function camPosCalc() {
+
+    if (window.innerWidth < 1000) {
+        camPosZ = 15;
+        console.log("Kleiner dan 1000, camPosZ is nu " + camPosZ);
+    } else if (window.innerWidth >= 1000 && window.innerWidth < 1920) {
+        camPosZ = 10;
+        console.log("Groter dan 1000 en kleiner dan 1920, camPosZ is nu " + camPosZ);
+    } else if (window.innerWidth == 1920 || window.innerWidth > 1920) {
+        camPosZ = 5;
+        console.log("Groter dan 1920, camPosZ is nu " + camPosZ);
+    } else {
+        console.error(camera.position.z + " Something went wrong. Your screen width of " + window.innerWidth + " Does not work properly with our site, please make your browser smaller or larger.");
+    }
+    camera.position.z = camPosZ;
+}
+
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    camera.position.z = 5; // Set initial camera position
     camera.position.y = 0;
 
+    camPosCalc();
     // Add planes with content from planesContent array
     planesContent.forEach((content, index) => {
         const plane = createTextPlane(content); // Pass content for each plane
@@ -78,7 +97,7 @@ function createTextPlane(content) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    context.fillStyle = 'black';
+    context.fillStyle = 'transparent';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     // Tekst wrap functie
@@ -183,9 +202,9 @@ function onScroll(scroll) {
 
         const targetY = -12.5 * (currCam - 1); // Target y-position
         gsap.timeline()
-            .to(camera.position, { z: 10, duration: 0.5 }) // Move camera back
+            .to(camera.position, { z: camPosZ + 10, duration: 0.5 }) // Move camera back
             .to(camera.position, { y: targetY, duration: 0.5 }) // Slide camera down
-            .to(camera.position, { z: 5, duration: 0.5 }) // Move camera forward
+            .to(camera.position, { z: camPosZ, duration: 0.5 }) // Move camera forward
             .call(() => { canScroll = true; }); // Re-enable scrolling after animation
 
         console.log(`Camera moved to plane ${currCam}, new y: ${targetY}`);
@@ -230,6 +249,7 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    camPosCalc();
 }
 
 // Initialize everything
